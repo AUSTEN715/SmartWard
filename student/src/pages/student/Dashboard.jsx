@@ -22,7 +22,7 @@ export const Dashboard = () => {
   const [modalType, setModalType] = useState(''); 
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const studentName = user.fullName ? user.fullName.split(' ')[0] : 'Student'; 
+  const studentName = user.fullName || 'Student'; 
 
   const getGreeting = () => {
     const hour = new Date().getHours();

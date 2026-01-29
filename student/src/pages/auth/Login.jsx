@@ -12,30 +12,39 @@ export const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
+    e.preventDefault();
+    setIsLoading(true);
 
-    // Call API
-    const response = await postData('/auth/login', { ...formData, role });
+    try {
+      // Call API
+      const response = await postData('/auth/login', { ...formData, role });
 
-    setIsLoading(false);
+      if (response.success) {
+        openAlertBox('Success', 'Login Successful!'); 
+        
+        // 🟢 STORE BOTH TOKENS
+        if (response.data) {
+          if (response.data.accessToken) {
+            localStorage.setItem('accesstoken', response.data.accessToken); 
+          }
+          if (response.data.refreshToken) {
+            localStorage.setItem('refreshToken', response.data.refreshToken); 
+          }
+          if (response.data.user) {
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+          }
+        }
 
-    if (response.success) {
-      // Success Popup
-      openAlertBox('Success', 'Login Successful!'); 
-      
-      // Store Token & User Data
-      if (response.data && response.data.accessToken) {
-        localStorage.setItem('accesstoken', response.data.accessToken); 
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-      }
-
-      navigate('/dashboard');
-    } else {
-      // Error Popup
-      openAlertBox('Error', response.message || 'Invalid email or password');
-    }
-  };
+        navigate('/dashboard');
+      } else {
+        openAlertBox('Error', response.message || 'Invalid email or password');
+      }
+    } catch (error) {
+      openAlertBox('Error', 'Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleGoogleLogin = () => {
     setIsLoading(true);

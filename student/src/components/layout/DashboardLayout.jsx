@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, FileText, Bell, Search, LogOut, Menu, X, Check, Trash2, Calendar, User, Settings } from 'lucide-react';
 import { openAlertBox } from '../../utils/toast';
 import { useNotifications } from '../../context/NotificationContext';
+// 1. IMPORT API UTILS
+import { postData } from '../../utils/apiUtils';
 
 export const DashboardLayout = ({ children }) => {
   const location = useLocation();
@@ -46,10 +48,20 @@ export const DashboardLayout = ({ children }) => {
     { icon: Search, label: 'Lost & Found', path: '/lost-found' },
   ];
 
-  const handleLogout = () => {
-    localStorage.clear();
-    openAlertBox('Success', 'Signed out successfully');
-    navigate('/login');
+  // 2. UPDATED LOGOUT FUNCTION
+  const handleLogout = async () => {
+    try {
+      // Optional: Tell Backend to invalidate session
+      await postData('/auth/logout', {}); 
+    } catch (error) {
+      console.warn("Server logout failed, clearing local session anyway.");
+    } finally {
+      // CRITICAL: Wipe all local data
+      localStorage.clear(); 
+      
+      openAlertBox('Success', 'Signed out successfully');
+      navigate('/login');
+    }
   };
 
   const toggleNotifications = () => {
@@ -96,7 +108,6 @@ export const DashboardLayout = ({ children }) => {
         
         {/* HEADER */}
         <header className="hidden md:flex flex-col justify-center bg-white border-b border-gray-200 px-8 py-6 sticky top-0 z-20">
-           {/* 🛠️ CHANGED 'items-end' TO 'items-center' HERE 🛠️ */}
            <div className="flex items-center justify-between">
               
               {/* LEFT: Greeting */}
@@ -192,7 +203,7 @@ export const DashboardLayout = ({ children }) => {
            </div>
         </header>
 
-        {/* Mobile Header (Same as before) */}
+        {/* Mobile Header */}
         <div className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-20 shadow-sm">
            <div className="flex items-center gap-2">
              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xs">SH</div>
