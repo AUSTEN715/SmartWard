@@ -24,7 +24,7 @@ export const AnnouncementList = () => {
       category: (item.category || 'GENERAL').toUpperCase(), 
       date: new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       author: item.createdBy?.fullName || 'Admin',
-      description: item.content || item.description, // Handle different field names
+      description: item.content, // ✅ Schema uses 'content'
       isPinned: item.isPinned
     }));
   };
@@ -33,12 +33,12 @@ export const AnnouncementList = () => {
     const loadAnnouncements = async () => {
       try {
         const response = await fetchDataFromApi('/announcements');
-        if (response.success) {
-          const list = response.data.announcements || response.data || [];
+        if (response.success && response.data) {
+          const list = response.data.announcements || [];
           setAnnouncements(formatAnnouncements(list));
         }
       } catch (error) {
-        console.error("Failed to load announcements", error);
+        console.error("Fetch error", error);
       } finally {
         setLoading(false);
       }
@@ -79,7 +79,6 @@ export const AnnouncementList = () => {
           </div>
           
           <div className="flex gap-3 w-full md:w-auto relative">
-            {/* Search Bar */}
             <div className="relative flex-1 md:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input 
@@ -91,7 +90,6 @@ export const AnnouncementList = () => {
               />
             </div>
 
-            {/* Filter Button */}
             <div className="relative">
               <button 
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -107,7 +105,6 @@ export const AnnouncementList = () => {
                 </div>
               </button>
 
-              {/* DROPDOWN MENU */}
               {isDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
                   <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
@@ -131,15 +128,10 @@ export const AnnouncementList = () => {
           </div>
         </div>
 
-        {/* Overlay */}
         {isDropdownOpen && (
-          <div 
-            className="fixed inset-0 z-40 bg-transparent" 
-            onClick={() => setIsDropdownOpen(false)} 
-          />
+          <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsDropdownOpen(false)} />
         )}
 
-        {/* List Content */}
         {loading ? (
            <div className="flex justify-center py-20"><Loader className="w-8 h-8 text-blue-600 animate-spin" /></div>
         ) : (
@@ -158,15 +150,12 @@ export const AnnouncementList = () => {
                    <Search className="w-8 h-8 text-gray-400" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900">No results found</h3>
-                <p className="text-gray-500 text-sm mt-1">
-                  We couldn't find any announcements matching "{searchTerm}"
-                </p>
+                <p className="text-gray-500 text-sm mt-1">We couldn't find anything matching your search.</p>
                 <button 
                   onClick={() => { setSearchTerm(''); setFilter('All'); }}
                   className="mt-4 flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm"
                 >
-                  <XCircle className="w-4 h-4" />
-                  Clear Filters
+                  <XCircle className="w-4 h-4" /> Clear Filters
                 </button>
               </div>
             )}

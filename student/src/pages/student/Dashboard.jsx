@@ -11,11 +11,7 @@ import { fetchDataFromApi } from '../../utils/apiUtils';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
-  const [stats, setStats] = useState([
-    { title: 'Total Issues', value: 0, icon: FileText, color: '#3B82F6' },
-    { title: 'Pending', value: 0, icon: Clock, color: '#F59E0B' },
-    { title: 'Resolved', value: 0, icon: CheckCircle, color: '#10B981' },
-  ]);
+  const [stats, setStats] = useState([]);
   const [recentIssues, setRecentIssues] = useState([]);
   const [announcements, setAnnouncements] = useState([]); 
   const [loading, setLoading] = useState(true);
@@ -25,7 +21,6 @@ export const Dashboard = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalType, setModalType] = useState(''); 
 
-  // --- GET USER NAME ---
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const studentName = user.fullName ? user.fullName.split(' ')[0] : 'Student'; 
 
@@ -36,28 +31,35 @@ export const Dashboard = () => {
     return 'Good Evening';
   };
 
-  // Formatting Helpers
+  // --- DATA MAPPING ---
   const formatIssues = (list) => list.map(issue => ({
     id: issue._id,
     title: issue.title,
-    category: issue.category,
+    category: issue.category, // Backend sends UPPERCASE (e.g., PLUMBING)
     priority: issue.priority,
     status: issue.status,
     description: issue.description,
-    timeAgo: new Date(issue.createdAt || issue.reportedAt).toLocaleDateString(),
+    timeAgo: new Date(issue.reportedAt || issue.createdAt).toLocaleDateString(),
+    // Handle populated fields safely
     location: issue.location || `${issue.hostel?.name || 'Hostel'} - ${issue.roomNumber || ''}`,
-    author: issue.reporter?.fullName
+    author: issue.reporter?.fullName || 'Me'
   }));
 
   const formatAnnouncements = (list) => list.map(item => ({
     id: item._id,
     title: item.title,
-    category: item.category || 'General',
+    category: item.category || 'GENERAL',
     date: new Date(item.createdAt).toLocaleDateString(),
     author: item.createdBy?.fullName || 'Admin',
-    description: item.content || item.description,
+    description: item.content, // Backend schema uses 'content', UI uses 'description'
     isPinned: item.isPinned
   }));
+
+  const formatStats = (data) => [
+    { title: 'Total Issues', value: data.total || 0, icon: FileText, color: '#3B82F6' },
+    { title: 'Pending', value: data.pending || 0, icon: Clock, color: '#F59E0B' },
+    { title: 'Resolved', value: data.resolved || 0, icon: CheckCircle, color: '#10B981' },
+  ];
 
   const handleCardClick = (item, type) => {
     setSelectedItem(item);
@@ -68,36 +70,35 @@ export const Dashboard = () => {
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
+        setLoading(true);
         // 1. Fetch Issues
         const issuesRes = await fetchDataFromApi('/issues');
         
+        // 2. Fetch Announcements
+        const annRes = await fetchDataFromApi('/announcements');
+
+        // Process Issues
         if (issuesRes.success) {
           const allIssues = issuesRes.data.issues || [];
           
-          // Calculate Stats
+          // Calculate Stats Logic
           const total = allIssues.length;
           const resolved = allIssues.filter(i => i.status === 'RESOLVED').length;
           const pending = total - resolved;
 
-          setStats([
-            { title: 'Total Issues', value: total, icon: FileText, color: '#3B82F6' },
-            { title: 'Pending', value: pending, icon: Clock, color: '#F59E0B' },
-            { title: 'Resolved', value: resolved, icon: CheckCircle, color: '#10B981' },
-          ]);
-
-          // Set Recent Issues (Top 4)
+          setStats(formatStats({ total, pending, resolved }));
+          // Show Top 4 Recent
           setRecentIssues(formatIssues(allIssues.slice(0, 4)));
         }
 
-        // 2. Fetch Announcements
-        const annRes = await fetchDataFromApi('/announcements');
+        // Process Announcements
         if (annRes.success) {
            const annList = annRes.data.announcements || [];
            setAnnouncements(formatAnnouncements(annList));
         }
 
       } catch (error) {
-        console.error("Failed to load dashboard data", error);
+        console.error("Dashboard data load failed", error);
       } finally {
         setLoading(false);
       }
@@ -174,10 +175,8 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* Floating Button */}
       <button onClick={() => navigate('/issues/new')} className="fixed bottom-8 right-8 w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 hover:scale-105 active:scale-95 flex items-center justify-center transition-all z-40"><Plus className="w-6 h-6" /></button>
 
-      {/* Detail Modal */}
       <DetailModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}

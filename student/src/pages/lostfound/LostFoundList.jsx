@@ -21,11 +21,11 @@ export const LostFoundList = () => {
     return data.map(item => ({
       id: item._id,
       type: item.type.toLowerCase(),
-      title: item.itemName,
+      title: item.itemName, // ✅ Schema uses 'itemName'
       category: item.category,
       date: new Date(item.dateLostFound).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       location: item.location,
-      image: item.image || null,
+      image: item.imageUrl || null, // ✅ Schema uses 'imageUrl'
       description: item.description,
       author: item.reporter?.fullName || 'Anonymous' 
     }));
@@ -36,7 +36,7 @@ export const LostFoundList = () => {
       try {
         const response = await fetchDataFromApi('/lost-found');
         if (response.success) {
-          const list = response.data.items || response.data || [];
+          const list = response.data.items || [];
           setItems(formatItems(list));
         }
       } catch (error) {

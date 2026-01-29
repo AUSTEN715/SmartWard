@@ -9,13 +9,13 @@ import { openAlertBox } from '../../utils/toast';
 
 export const ReportLostFound = () => {
   const navigate = useNavigate();
-  const [type, setType] = useState('lost'); // 'lost' or 'found'
+  const [type, setType] = useState('LOST'); // Default to uppercase to match backend enum
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState(null);
 
   const [formData, setFormData] = useState({
     itemName: '',
-    category: 'Electronics',
+    category: 'ELECTRONICS', // Default to uppercase enum
     dateLostFound: new Date().toISOString().split('T')[0],
     location: '',
     description: ''
@@ -33,15 +33,15 @@ export const ReportLostFound = () => {
 
     try {
       const data = new FormData();
-      data.append('type', type.toUpperCase()); // Backend likely expects uppercase
+      data.append('type', type); // Already uppercase
       data.append('itemName', formData.itemName);
-      data.append('category', formData.category.toUpperCase());
+      data.append('category', formData.category); // Already uppercase
       data.append('dateLostFound', formData.dateLostFound);
       data.append('location', formData.location);
       data.append('description', formData.description);
       
       if (file) {
-        data.append('image', file); // Sending file as 'image'
+        data.append('image', file); // 'image' field name expected by Multer/Backend
       }
 
       const response = await postData('/lost-found', data);
@@ -78,9 +78,9 @@ export const ReportLostFound = () => {
               <div className="grid grid-cols-2 gap-4">
                 <button
                   type="button"
-                  onClick={() => setType('lost')}
+                  onClick={() => setType('LOST')}
                   className={`py-3 px-4 rounded-lg border-2 font-medium transition-all ${
-                    type === 'lost' 
+                    type === 'LOST' 
                       ? 'border-red-500 bg-red-50 text-red-700' 
                       : 'border-gray-200 hover:bg-gray-50 text-gray-600'
                   }`}
@@ -89,9 +89,9 @@ export const ReportLostFound = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setType('found')}
+                  onClick={() => setType('FOUND')}
                   className={`py-3 px-4 rounded-lg border-2 font-medium transition-all ${
-                    type === 'found' 
+                    type === 'FOUND' 
                       ? 'border-green-500 bg-green-50 text-green-700' 
                       : 'border-gray-200 hover:bg-gray-50 text-gray-600'
                   }`}
@@ -117,12 +117,12 @@ export const ReportLostFound = () => {
                   value={formData.category}
                   onChange={(e) => setFormData({...formData, category: e.target.value})}
                 >
-                  <option value="Electronics">Electronics</option>
-                  <option value="Clothing">Clothing</option>
-                  <option value="Documents">Documents</option>
-                  <option value="Keys">Keys</option>
-                  <option value="Accessories">Accessories</option>
-                  <option value="Other">Other</option>
+                  <option value="ELECTRONICS">Electronics</option>
+                  <option value="CLOTHING">Clothing</option>
+                  <option value="DOCUMENTS">Documents</option>
+                  <option value="KEYS">Keys</option>
+                  <option value="ACCESSORIES">Accessories</option>
+                  <option value="OTHER">Other</option>
                 </select>
               </div>
               <Input 
@@ -136,7 +136,7 @@ export const ReportLostFound = () => {
 
             <Input 
               label="Location" 
-              placeholder={type === 'lost' ? "Where did you lose it?" : "Where did you find it?"} 
+              placeholder={type === 'LOST' ? "Where did you lose it?" : "Where did you find it?"} 
               required 
               value={formData.location}
               onChange={(e) => setFormData({...formData, location: e.target.value})}

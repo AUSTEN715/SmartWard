@@ -16,14 +16,15 @@ export const ReportIssue = () => {
     category: '',
     title: '',
     description: '',
-    priority: 'Medium'
+    priority: 'MEDIUM' // Default matching schema default
   });
 
+  // ✅ UPDATED: IDs are now UPPERCASE to match Mongoose Enum
   const categories = [
-    { id: 'plumbing', name: 'Plumbing', icon: '🚰' },
-    { id: 'electrical', name: 'Electrical', icon: '⚡' },
-    { id: 'cleanliness', name: 'Cleanliness', icon: '🧹' },
-    { id: 'internet', name: 'Internet', icon: '📡' },
+    { id: 'PLUMBING', name: 'Plumbing', icon: '🚰' },
+    { id: 'ELECTRICAL', name: 'Electrical', icon: '⚡' },
+    { id: 'CLEANLINESS', name: 'Cleanliness', icon: '🧹' },
+    { id: 'INTERNET', name: 'Internet', icon: '📡' },
   ];
 
   const handleFileChange = (e) => {
@@ -52,7 +53,7 @@ export const ReportIssue = () => {
       data.append('category', formData.category);
       data.append('title', formData.title);
       data.append('description', formData.description);
-      data.append('priority', formData.priority);
+      data.append('priority', formData.priority); // Sends 'MEDIUM', 'HIGH', etc.
       
       files.forEach((file) => {
         data.append('media', file); 
@@ -167,20 +168,24 @@ export const ReportIssue = () => {
               )}
             </div>
 
-            {/* Priority */}
+            {/* Priority - UPDATED TO UPPERCASE VALUES */}
             <div>
                <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
                <div className="flex p-1 bg-gray-100 rounded-lg">
-                 {['Low', 'Medium', 'High'].map((p) => (
+                 {[
+                   { label: 'Low', value: 'LOW' }, 
+                   { label: 'Medium', value: 'MEDIUM' }, 
+                   { label: 'High', value: 'HIGH' }
+                 ].map((p) => (
                    <button
-                    key={p}
+                    key={p.value}
                     type="button"
-                    onClick={() => setFormData({...formData, priority: p})}
+                    onClick={() => setFormData({...formData, priority: p.value})}
                     className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
-                      formData.priority === p ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                      formData.priority === p.value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
                     }`}
                    >
-                     {p}
+                     {p.label}
                    </button>
                  ))}
                </div>

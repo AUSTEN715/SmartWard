@@ -20,7 +20,7 @@ export const MyIssues = () => {
   
   const tabs = ['All', 'Pending', 'Resolved', 'Closed'];
 
-  // Helper to format data from Backend -> UI
+  // Helper to format data
   const formatIssues = (data) => {
     return data.map(issue => ({
       id: issue._id,
@@ -29,8 +29,8 @@ export const MyIssues = () => {
       priority: issue.priority,
       status: issue.status,
       description: issue.description,
-      timeAgo: new Date(issue.createdAt || issue.reportedAt).toLocaleDateString(),
-      location: issue.location || `Room ${issue.roomNumber || 'N/A'}`,
+      timeAgo: new Date(issue.reportedAt || issue.createdAt).toLocaleDateString(),
+      location: issue.location || `${issue.hostel?.name || 'Hostel'} - ${issue.roomNumber || ''}`,
       author: issue.reporter?.fullName || 'Me'
     }));
   };
@@ -38,26 +38,18 @@ export const MyIssues = () => {
   useEffect(() => {
     const loadIssues = async () => {
       try {
-        setLoading(true);
-        // 1. Get User ID to filter specifically for YOU
         const user = JSON.parse(localStorage.getItem('user') || '{}');
-        
-        // 2. Add reporterId to query (assuming backend supports filtering)
-        // If your backend automatically filters by token, you can just use '/issues'
+        // Backend filtering by reporter
         const query = user._id ? `?reporterId=${user._id}` : '';
 
         const response = await fetchDataFromApi(`/issues${query}`); 
         
         if (response.success) {
-          const fetchedIssues = response.data.issues || response.data || [];
+          const fetchedIssues = response.data.issues || [];
           setIssues(formatIssues(fetchedIssues));
-        } else {
-          // Handle error gracefully
-          setIssues([]);
         }
       } catch (error) {
-        console.error("Failed to load issues", error);
-        setIssues([]);
+        console.error("Failed to fetch issues", error);
       } finally {
         setLoading(false);
       }
@@ -71,7 +63,9 @@ export const MyIssues = () => {
   };
 
   const filteredIssues = issues.filter(issue => {
-    const status = issue.status;
+    const status = issue.status; // Backend returns 'RESOLVED', 'CLOSED', etc.
+    
+    // Logic matching Backend Enums
     const matchesTab = 
       activeTab === 'All' || 
       (activeTab === 'Resolved' && status === 'RESOLVED') ||
@@ -145,7 +139,6 @@ export const MyIssues = () => {
         </div>
       )}
 
-      {/* Detail Modal */}
       <DetailModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
