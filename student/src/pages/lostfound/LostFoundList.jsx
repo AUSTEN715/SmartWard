@@ -3,39 +3,44 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Loader } from 'lucide-react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { LostFoundCard } from '../../components/lostfound/LostFoundCard';
+import { DetailModal } from '../../components/ui/DetailModal'; 
 import { Button } from '../../components/ui/Button';
 import { fetchDataFromApi } from '../../utils/apiUtils';
-import { openAlertBox } from '../../utils/toast';
 
 export const LostFoundList = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('lost'); // 'lost' or 'found'
+  const [activeTab, setActiveTab] = useState('lost'); 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+
+  const formatItems = (data) => {
+    return data.map(item => ({
+      id: item._id,
+      type: item.type.toLowerCase(),
+      title: item.itemName,
+      category: item.category,
+      date: new Date(item.dateLostFound).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      location: item.location,
+      image: item.image || null,
+      description: item.description,
+      author: item.reporter?.fullName || 'Anonymous' 
+    }));
+  };
 
   useEffect(() => {
     const loadItems = async () => {
       try {
         const response = await fetchDataFromApi('/lost-found');
-        if (response.success && response.data) {
-          // Map API data to UI
-          const formattedItems = response.data.items.map(item => ({
-            id: item._id,
-            type: item.type.toLowerCase(), // Ensure 'LOST' becomes 'lost'
-            title: item.itemName,
-            category: item.category,
-            date: new Date(item.dateLostFound).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-            location: item.location,
-            image: item.image || null, // Handle missing images
-            description: item.description,
-            reporter: item.reporter?.fullName
-          }));
-          setItems(formattedItems);
+        if (response.success) {
+          const list = response.data.items || response.data || [];
+          setItems(formatItems(list));
         }
       } catch (error) {
-        console.error(error);
-        openAlertBox('Error', "Failed to load items");
+        console.error("Failed to load lost/found items", error);
       } finally {
         setLoading(false);
       }
@@ -43,7 +48,11 @@ export const LostFoundList = () => {
     loadItems();
   }, []);
 
-  // Filter Logic
+  const handleCardClick = (item) => {
+    setSelectedItem(item);
+    setIsModalOpen(true);
+  };
+
   const filteredItems = items.filter(item => {
     const matchesTab = item.type === activeTab;
     const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase());
@@ -101,7 +110,11 @@ export const LostFoundList = () => {
         ) : filteredItems.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {filteredItems.map((item) => (
-              <LostFoundCard key={item.id} item={item} />
+              <LostFoundCard 
+                key={item.id} 
+                item={item} 
+                onClick={() => handleCardClick(item)}
+              />
             ))}
           </div>
         ) : (
@@ -110,6 +123,13 @@ export const LostFoundList = () => {
           </div>
         )}
       </div>
+
+      <DetailModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)}
+        title={activeTab === 'lost' ? 'Lost Item Details' : 'Found Item Details'}
+        data={selectedItem}
+      />
     </DashboardLayout>
   );
 };

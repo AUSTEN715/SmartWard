@@ -1,37 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Loader } from 'lucide-react';
+import { Search, Filter, Loader, XCircle, Check } from 'lucide-react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { AnnouncementCard } from '../../components/announcements/AnnouncementCard';
+import { DetailModal } from '../../components/ui/DetailModal'; 
 import { fetchDataFromApi } from '../../utils/apiUtils';
-import { openAlertBox } from '../../utils/toast';
 
 export const AnnouncementList = () => {
   const [filter, setFilter] = useState('All');
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
 
-  // Fetch Data
+  const categories = ['All', 'Emergency', 'Maintenance', 'Event', 'Food', 'General'];
+
+  const formatAnnouncements = (data) => {
+    return data.map(item => ({
+      id: item._id,
+      title: item.title,
+      category: (item.category || 'GENERAL').toUpperCase(), 
+      date: new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      author: item.createdBy?.fullName || 'Admin',
+      description: item.content || item.description, // Handle different field names
+      isPinned: item.isPinned
+    }));
+  };
+
   useEffect(() => {
     const loadAnnouncements = async () => {
       try {
         const response = await fetchDataFromApi('/announcements');
-        if (response.success && response.data) {
-          // Map backend data to match your UI structure
-          const formattedData = response.data.announcements.map(item => ({
-            id: item._id,
-            title: item.title,
-            category: item.category || 'General',
-            date: new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-            author: item.createdBy?.fullName || 'Admin',
-            description: item.content, // Assuming content is plain text. If HTML, use dangerouslySetInnerHTML in Card.
-            isPinned: item.isPinned
-          }));
-          setAnnouncements(formattedData);
+        if (response.success) {
+          const list = response.data.announcements || response.data || [];
+          setAnnouncements(formatAnnouncements(list));
         }
       } catch (error) {
-        console.error(error);
-        openAlertBox('Error', "Failed to load announcements");
+        console.error("Failed to load announcements", error);
       } finally {
         setLoading(false);
       }
@@ -39,10 +46,26 @@ export const AnnouncementList = () => {
     loadAnnouncements();
   }, []);
 
-  // Filter Logic
+  const handleCardClick = (announcement) => {
+    setSelectedAnnouncement(announcement);
+    setIsModalOpen(true);
+  };
+
+  const handleFilterSelect = (category) => {
+    setFilter(category);
+    setIsDropdownOpen(false);
+  };
+
   const filteredAnnouncements = announcements.filter(item => {
-    const matchesCategory = filter === 'All' || item.category === filter.toUpperCase();
-    const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const itemCat = item.category.toUpperCase(); 
+    const filterCat = filter.toUpperCase();
+    const matchesCategory = filter === 'All' || itemCat === filterCat;
+
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = 
+      item.title.toLowerCase().includes(searchLower) || 
+      item.description.toLowerCase().includes(searchLower);
+
     return matchesCategory && matchesSearch;
   });
 
@@ -55,7 +78,8 @@ export const AnnouncementList = () => {
             <p className="text-gray-500">Stay updated with the latest news from the hostel.</p>
           </div>
           
-          <div className="flex gap-3 w-full md:w-auto">
+          <div className="flex gap-3 w-full md:w-auto relative">
+            {/* Search Bar */}
             <div className="relative flex-1 md:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input 
@@ -63,46 +87,99 @@ export const AnnouncementList = () => {
                 placeholder="Search updates..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow focus:shadow-sm"
               />
             </div>
-            <button className="flex items-center px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 text-gray-700">
-              <Filter className="w-4 h-4 mr-2" /> Filter
-            </button>
+
+            {/* Filter Button */}
+            <div className="relative">
+              <button 
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className={`flex items-center px-4 py-2 border rounded-lg text-sm font-medium transition-colors w-full md:w-auto justify-between gap-2 ${
+                  isDropdownOpen || filter !== 'All'
+                    ? 'bg-blue-50 border-blue-200 text-blue-600' 
+                    : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4" /> 
+                  <span>{filter === 'All' ? 'Filter' : filter}</span>
+                </div>
+              </button>
+
+              {/* DROPDOWN MENU */}
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Select Category
+                  </div>
+                  {categories.map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => handleFilterSelect(cat)}
+                      className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors ${
+                        filter === cat ? 'text-blue-600 bg-blue-50 font-medium' : 'text-gray-700'
+                      }`}
+                    >
+                      {cat}
+                      {filter === cat && <Check className="w-4 h-4" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Categories Tab */}
-        <div className="flex gap-2 overflow-x-auto pb-4 mb-2 no-scrollbar">
-          {['All', 'Emergency', 'Maintenance', 'Event', 'Food'].map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setFilter(cat)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                filter === cat 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+        {/* Overlay */}
+        {isDropdownOpen && (
+          <div 
+            className="fixed inset-0 z-40 bg-transparent" 
+            onClick={() => setIsDropdownOpen(false)} 
+          />
+        )}
 
+        {/* List Content */}
         {loading ? (
            <div className="flex justify-center py-20"><Loader className="w-8 h-8 text-blue-600 animate-spin" /></div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredAnnouncements.length > 0 ? (
               filteredAnnouncements.map((item) => (
-                <AnnouncementCard key={item.id} data={item} />
+                <AnnouncementCard 
+                  key={item.id} 
+                  data={item} 
+                  onClick={() => handleCardClick(item)}
+                />
               ))
             ) : (
-              <div className="col-span-full text-center py-10 text-gray-500">No announcements found.</div>
+              <div className="col-span-full flex flex-col items-center justify-center py-16 bg-white rounded-xl border border-dashed border-gray-300">
+                <div className="bg-gray-50 p-4 rounded-full mb-3">
+                   <Search className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900">No results found</h3>
+                <p className="text-gray-500 text-sm mt-1">
+                  We couldn't find any announcements matching "{searchTerm}"
+                </p>
+                <button 
+                  onClick={() => { setSearchTerm(''); setFilter('All'); }}
+                  className="mt-4 flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Clear Filters
+                </button>
+              </div>
             )}
           </div>
         )}
       </div>
+
+      <DetailModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)}
+        title="Announcement"
+        data={selectedAnnouncement}
+      />
     </DashboardLayout>
   );
 };

@@ -1,54 +1,45 @@
 import React from 'react';
-import { Calendar, User, Pin, ChevronRight } from 'lucide-react';
-import { Badge } from '../ui/Badge';
+import { Pin, Calendar, Megaphone } from 'lucide-react';
 
-export const AnnouncementCard = ({ data }) => {
-  const categoryColors = {
-    Maintenance: 'warning',
-    Event: 'primary',
-    Emergency: 'danger',
-    General: 'default',
-    Food: 'success'
-  };
-
+export const AnnouncementCard = ({ data, onClick }) => {
   return (
-    <div className={`bg-white rounded-xl p-5 border transition-all duration-200 hover:shadow-md ${
-      data.isPinned ? 'border-blue-200 bg-blue-50/30' : 'border-gray-200 hover:border-blue-200'
-    }`}>
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex gap-2">
-          <Badge variant={categoryColors[data.category] || 'default'} size="sm">
-            {data.category}
-          </Badge>
-          {data.isPinned && (
-            <span className="flex items-center text-xs font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
-              <Pin className="w-3 h-3 mr-1 fill-current" /> Pinned
-            </span>
-          )}
-        </div>
-        <span className="text-xs text-gray-500 flex items-center">
-          <Calendar className="w-3 h-3 mr-1" />
-          {data.date}
-        </span>
-      </div>
+    <div 
+      onClick={() => onClick && onClick(data)}
+      className={`bg-white rounded-xl p-4 border shadow-sm hover:shadow-md transition-all cursor-pointer group relative ${
+        data.isPinned ? 'border-blue-200 bg-blue-50/10' : 'border-gray-200'
+      }`}
+    >
+      {/* Pinned Icon */}
+      {data.isPinned && (
+        <Pin className="absolute top-3 right-3 w-3.5 h-3.5 text-blue-500 fill-current transform rotate-45" />
+      )}
 
-      <h3 className="text-lg font-bold text-gray-900 mb-2">{data.title}</h3>
-      <p className="text-gray-600 text-sm line-clamp-2 mb-4 leading-relaxed">
-        {data.description}
-      </p>
-
-      <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
-        <div className="flex items-center text-xs text-gray-500">
-          <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center mr-2 text-gray-600 font-bold">
-            {data.author[0]}
-          </div>
-          <span>Posted by <span className="font-medium text-gray-700">{data.author}</span></span>
+      <div className="flex items-start gap-3">
+        <div className={`p-2.5 rounded-lg flex-shrink-0 ${
+          data.category === 'EMERGENCY' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+        }`}>
+          <Megaphone className="w-4 h-4" />
         </div>
         
-        <button className="text-blue-600 text-sm font-medium hover:text-blue-700 flex items-center group">
-          Read More 
-          <ChevronRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
-        </button>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">{data.category}</span>
+            <span className="text-[10px] text-gray-300">•</span>
+            <span className="text-[10px] text-gray-400 flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {data.date}
+            </span>
+          </div>
+
+          <h3 className="text-sm font-bold text-gray-900 mb-1 leading-tight group-hover:text-blue-600 transition-colors line-clamp-1">
+            {data.title}
+          </h3>
+          
+          {/* CHANGED: line-clamp-2 -> truncate */}
+          <p className="text-xs text-gray-500 leading-relaxed truncate">
+            {data.description}
+          </p>
+        </div>
       </div>
     </div>
   );

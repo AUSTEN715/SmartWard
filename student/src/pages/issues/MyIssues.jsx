@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Loader } from 'lucide-react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
-import { IssueCard } from '../../components/issues/IssueCard';
+import { IssueCard } from '../../components/issues/IssueCard'; 
 import { Button } from '../../components/ui/Button';
+import { DetailModal } from '../../components/ui/DetailModal';
 import { fetchDataFromApi } from '../../utils/apiUtils';
-import { openAlertBox } from '../../utils/toast'; // Added Toast
 
 export const MyIssues = () => {
   const navigate = useNavigate();
@@ -13,23 +13,51 @@ export const MyIssues = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedIssue, setSelectedIssue] = useState(null);
   
   const tabs = ['All', 'Pending', 'Resolved', 'Closed'];
+
+  // Helper to format data from Backend -> UI
+  const formatIssues = (data) => {
+    return data.map(issue => ({
+      id: issue._id,
+      title: issue.title,
+      category: issue.category,
+      priority: issue.priority,
+      status: issue.status,
+      description: issue.description,
+      timeAgo: new Date(issue.createdAt || issue.reportedAt).toLocaleDateString(),
+      location: issue.location || `Room ${issue.roomNumber || 'N/A'}`,
+      author: issue.reporter?.fullName || 'Me'
+    }));
+  };
 
   useEffect(() => {
     const loadIssues = async () => {
       try {
-        const response = await fetchDataFromApi('/issues'); 
+        setLoading(true);
+        // 1. Get User ID to filter specifically for YOU
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
         
-        if (response.success && response.data) {
-          setIssues(response.data.issues);
+        // 2. Add reporterId to query (assuming backend supports filtering)
+        // If your backend automatically filters by token, you can just use '/issues'
+        const query = user._id ? `?reporterId=${user._id}` : '';
+
+        const response = await fetchDataFromApi(`/issues${query}`); 
+        
+        if (response.success) {
+          const fetchedIssues = response.data.issues || response.data || [];
+          setIssues(formatIssues(fetchedIssues));
         } else {
-          // Optional: Show error if fetch fails specifically
-          // openAlertBox('Error', "Could not load issues.");
+          // Handle error gracefully
+          setIssues([]);
         }
       } catch (error) {
-        console.error("Error loading issues:", error);
-        openAlertBox('Error', "Network error while loading issues.");
+        console.error("Failed to load issues", error);
+        setIssues([]);
       } finally {
         setLoading(false);
       }
@@ -37,9 +65,20 @@ export const MyIssues = () => {
     loadIssues();
   }, []);
 
+  const handleCardClick = (issue) => {
+    setSelectedIssue(issue);
+    setIsModalOpen(true);
+  };
+
   const filteredIssues = issues.filter(issue => {
-    const matchesTab = activeTab === 'All' || issue.status === activeTab || (activeTab === 'Pending' && ['Reported', 'Assigned', 'In Progress'].includes(issue.status));
-    const matchesSearch = issue.title.toLowerCase().includes(searchTerm.toLowerCase()) || issue._id.toString().includes(searchTerm);
+    const status = issue.status;
+    const matchesTab = 
+      activeTab === 'All' || 
+      (activeTab === 'Resolved' && status === 'RESOLVED') ||
+      (activeTab === 'Closed' && status === 'CLOSED') ||
+      (activeTab === 'Pending' && ['REPORTED', 'ASSIGNED', 'IN_PROGRESS'].includes(status));
+      
+    const matchesSearch = issue.title.toLowerCase().includes(searchTerm.toLowerCase()) || issue.id.toString().includes(searchTerm);
     return matchesTab && matchesSearch;
   });
 
@@ -92,7 +131,11 @@ export const MyIssues = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredIssues.length > 0 ? (
             filteredIssues.map((issue) => (
-              <IssueCard key={issue._id} issue={issue} onClick={() => {}} />
+              <IssueCard 
+                key={issue.id} 
+                issue={issue} 
+                onClick={() => handleCardClick(issue)} 
+              />
             ))
           ) : (
             <div className="col-span-full text-center py-10 text-gray-500">
@@ -101,6 +144,14 @@ export const MyIssues = () => {
           )}
         </div>
       )}
+
+      {/* Detail Modal */}
+      <DetailModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)}
+        title="Issue Details"
+        data={selectedIssue}
+      />
     </DashboardLayout>
   );
 };

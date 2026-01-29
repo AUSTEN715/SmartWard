@@ -39,11 +39,17 @@ export const Login = () => {
 
   const handleGoogleLogin = () => {
     setIsLoading(true);
+    
+    // Simulating Google Login delay
     setTimeout(() => {
       setIsLoading(false);
+      
+      // 🟢 ADD THIS LINE: Show the Success Toast
+      openAlertBox('Success', 'Logged in with Google successfully!');
+      
       navigate('/dashboard');
     }, 1500);
-  };
+  };;
 
   return (
     <div className="min-h-screen flex bg-white">

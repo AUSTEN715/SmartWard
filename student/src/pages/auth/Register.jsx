@@ -16,20 +16,18 @@ export const Register = () => {
     password: '',
   });
 
+  // --- FIXED FUNCTION START ---
   const handleRegister = async (e) => {
-   const handleRegister = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // CORRECTED ENDPOINT: /auth/register
     const response = await postData('/auth/register', formData);
 
     setIsLoading(false);
 
     if (response.success) {
         openAlertBox('Success', "Registration successful! Please check email for OTP.");
-        // The backend sends an email but doesn't auto-login immediately after register in your code [cite: 8028]
-        // It returns { user, accessToken } but asks to verify email.
+        
         if (response.data && response.data.accessToken) {
              localStorage.setItem('accesstoken', response.data.accessToken);
              localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -40,8 +38,8 @@ export const Register = () => {
     } else {
         openAlertBox('Error', response.message || "Registration failed.");
     }
-};
   };
+  // --- FIXED FUNCTION END ---
 
   return (
     <div className="min-h-screen flex bg-white">

@@ -1,51 +1,51 @@
 import React from 'react';
-import { MapPin, Calendar, Tag } from 'lucide-react';
-import { Badge } from '../ui/Badge';
+import { MapPin, Image as ImageIcon } from 'lucide-react';
 
-export const LostFoundCard = ({ item }) => {
+export const LostFoundCard = ({ item, onClick }) => {
   const isLost = item.type === 'lost';
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 group flex flex-col h-full">
-      {/* Image Area */}
-      <div className="relative h-48 bg-gray-100 overflow-hidden">
-        <img 
-          src={item.image || 'https://via.placeholder.com/400x300?text=No+Image'} 
-          alt={item.title} 
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-        <div className="absolute top-3 left-3">
-          <Badge variant={isLost ? 'danger' : 'success'} className="shadow-sm backdrop-blur-md bg-opacity-90">
-            {isLost ? '🔴 Lost' : '🟢 Found'}
-          </Badge>
+    <div 
+      onClick={() => {
+        console.log("Card Clicked!", item.title); // Debugging Log
+        if (onClick) onClick(item);
+      }}
+      className="bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group flex h-28 relative z-0"
+    >
+      {/* Small Left Image */}
+      <div className="w-28 h-full bg-gray-100 relative flex-shrink-0">
+        <div className={`absolute top-2 left-2 px-1.5 py-0.5 rounded text-[9px] font-bold z-10 ${
+          isLost ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
+        }`}>
+          {isLost ? 'LOST' : 'FOUND'}
         </div>
-        <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">
-          {item.category}
-        </div>
+        
+        {item.image ? (
+          <img 
+            src={item.image} 
+            alt={item.title} 
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-300">
+            <ImageIcon className="w-6 h-6" />
+          </div>
+        )}
       </div>
 
       {/* Content */}
-      <div className="p-4 flex-1 flex flex-col">
-        <h3 className="font-bold text-gray-900 mb-2 line-clamp-1">{item.title}</h3>
+      <div className="p-3 flex flex-col justify-center flex-1 min-w-0">
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">{item.category}</span>
         
-        <div className="space-y-2 text-sm text-gray-500 mb-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-gray-400" />
-            <span>{item.date}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-gray-400" />
-            <span className="truncate">{item.location}</span>
-          </div>
-        </div>
+        <h3 className="font-bold text-gray-900 text-sm mb-1 group-hover:text-blue-600 transition-colors line-clamp-1">
+          {item.title}
+        </h3>
 
-        <button className={`mt-auto w-full py-2.5 rounded-lg text-sm font-semibold transition-colors border ${
-          isLost 
-            ? 'border-red-100 text-red-600 hover:bg-red-50' 
-            : 'border-green-100 text-green-600 hover:bg-green-50'
-        }`}>
-          {isLost ? 'I Found This' : 'This is Mine'}
-        </button>
+        <div className="flex items-center text-[11px] text-gray-500 mt-auto">
+          <MapPin className="w-3 h-3 mr-1 text-blue-500" />
+          <span className="truncate">{item.location}</span>
+        </div>
+        <span className="text-[10px] text-gray-400 mt-1">{item.date}</span>
       </div>
     </div>
   );

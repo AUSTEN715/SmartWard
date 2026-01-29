@@ -1,69 +1,59 @@
 import React from 'react';
-import { Badge } from '../ui/Badge';
-import { Clock, ChevronRight, AlertCircle } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle, AlertTriangle } from 'lucide-react';
 
 export const IssueCard = ({ issue, onClick }) => {
-  const priorityColors = {
-    Emergency: 'danger',
-    High: 'danger',
-    Medium: 'warning',
-    Low: 'success'
-  };
   
-  const statusColors = {
-    Reported: 'warning',
-    Assigned: 'primary',
-    'In Progress': 'info',
-    Resolved: 'success',
-    Closed: 'default'
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'RESOLVED': return 'bg-green-100 text-green-700';
+      case 'IN_PROGRESS': return 'bg-blue-100 text-blue-700';
+      case 'REJECTED': return 'bg-red-100 text-red-700';
+      default: return 'bg-amber-100 text-amber-700';
+    }
   };
-  
+
+  const getPriorityIcon = (priority) => {
+    switch (priority) {
+      case 'HIGH': return <AlertCircle className="w-3.5 h-3.5 text-red-500" />;
+      case 'MEDIUM': return <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />;
+      default: return <CheckCircle className="w-3.5 h-3.5 text-blue-500" />;
+    }
+  };
+
   return (
     <div 
-      onClick={onClick}
-      className="group bg-white rounded-xl p-4 border border-gray-100 hover:border-blue-300 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center gap-4"
+      onClick={() => onClick(issue)}
+      className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group flex items-start gap-3"
     >
-      {/* Icon Box */}
-      <div className="h-12 w-12 rounded-xl bg-gray-50 flex items-center justify-center text-2xl group-hover:bg-blue-50 group-hover:scale-105 transition-all flex-shrink-0">
-        {issue.icon}
-      </div>
+      {/* Priority Indicator Dot */}
+      <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${
+        issue.priority === 'HIGH' ? 'bg-red-500' : issue.priority === 'MEDIUM' ? 'bg-amber-500' : 'bg-blue-500'
+      }`} />
 
-      {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
-          <h4 className="font-semibold text-gray-900 truncate pr-2 group-hover:text-blue-600 transition-colors">
+        <div className="flex justify-between items-start mb-1">
+          <h3 className="font-bold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors">
             {issue.title}
-          </h4>
-          <span className="text-xs text-gray-400 whitespace-nowrap flex items-center flex-shrink-0">
-            <Clock className="w-3 h-3 mr-1" />
-            {issue.timeAgo}
+          </h3>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getStatusColor(issue.status)}`}>
+            {issue.status}
           </span>
         </div>
         
-        <div className="flex items-center flex-wrap gap-2 mt-1.5">
-          <span className="text-xs font-medium text-gray-500">#{issue.id}</span>
-          <span className="text-gray-300">•</span>
-          <span className="text-xs text-gray-500">{issue.category}</span>
-          
-          <span className="text-gray-300">•</span>
-          
-          {/* PRIORITY BADGE (Restored) */}
-          <Badge variant={priorityColors[issue.priority]} size="sm">
-            {issue.priority}
-          </Badge>
+        <p className="text-xs text-gray-500 line-clamp-1 mb-2">
+          {issue.description || `Reported in ${issue.category}`}
+        </p>
 
-          <div className="flex-1"></div>
-          
-          {/* STATUS BADGE */}
-          <Badge variant={statusColors[issue.status]} size="sm">
-            {issue.status}
-          </Badge>
+        <div className="flex items-center gap-3 text-[10px] text-gray-400 font-medium">
+           <span className="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
+             {getPriorityIcon(issue.priority)}
+             {issue.category}
+           </span>
+           <span className="flex items-center gap-1">
+             <Clock className="w-3 h-3" />
+             {issue.timeAgo || new Date(issue.reportedAt).toLocaleDateString()}
+           </span>
         </div>
-      </div>
-      
-      {/* Arrow Icon */}
-      <div className="text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all pl-2">
-        <ChevronRight className="w-5 h-5" />
       </div>
     </div>
   );
