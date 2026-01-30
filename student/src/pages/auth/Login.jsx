@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader, CheckCircle } from 'lucide-react';
+// 1. Import the Google Hook
+import { useGoogleLogin } from '@react-oauth/google';
 import { postData } from '../../utils/apiUtils';
 import { openAlertBox } from '../../utils/toast';
 
@@ -11,6 +13,7 @@ export const Login = () => {
   const [role, setRole] = useState('student'); 
   const [formData, setFormData] = useState({ email: '', password: '' });
 
+  // --- STANDARD EMAIL LOGIN ---
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -23,26 +26,18 @@ export const Login = () => {
       if (response.success) {
         openAlertBox('Success', 'Login Successful!'); 
         
-        // 🛠️ ROBUST TOKEN FINDER
+        // Robust Token Finder
         const accessToken = response.data?.accessToken || response.accessToken || response.token;
         const refreshToken = response.data?.refreshToken || response.refreshToken;
         const userData = response.data?.user || response.user;
 
         if (accessToken) {
            localStorage.setItem('accesstoken', accessToken); 
-           
-           if (refreshToken) {
-             localStorage.setItem('refreshToken', refreshToken); 
-           }
-           
-           if (userData) {
-             localStorage.setItem('user', JSON.stringify(userData));
-           }
-           
+           if (refreshToken) localStorage.setItem('refreshToken', refreshToken); 
+           if (userData) localStorage.setItem('user', JSON.stringify(userData));
            navigate('/dashboard');
         } else {
-           console.error("❌ Token not found in response structure:", response);
-           openAlertBox('Error', 'Login successful but no token received from server.');
+           openAlertBox('Error', 'Login successful but no token received.');
         }
 
       } else {
@@ -56,14 +51,45 @@ export const Login = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      openAlertBox('Success', 'Logged in with Google successfully!');
-      navigate('/dashboard');
-    }, 1500);
-  };
+  // --- 🟢 GOOGLE LOGIN (CONNECTED TO BACKEND) ---
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setIsLoading(true);
+      try {
+        // Send the Google Access Token to your Backend
+        const response = await postData('/auth/google', {
+          googleAccessToken: tokenResponse.access_token 
+        });
+
+        if (response.success) {
+          openAlertBox('Success', 'Google Login Successful!');
+          
+          // Save Tokens from your Backend Response
+          const accessToken = response.data?.accessToken || response.accessToken;
+          const refreshToken = response.data?.refreshToken || response.refreshToken;
+          const user = response.data?.user || response.user;
+          
+          if (accessToken) {
+             localStorage.setItem('accesstoken', accessToken);
+             if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+             if (user) localStorage.setItem('user', JSON.stringify(user));
+             navigate('/dashboard');
+          }
+        } else {
+          openAlertBox('Error', response.message || 'Google login failed');
+        }
+      } catch (error) {
+        console.error("Google Auth Error:", error);
+        openAlertBox('Error', 'Failed to authenticate with server');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    onError: () => {
+        openAlertBox('Error', 'Google Sign-In Failed');
+        setIsLoading(false);
+    }
+  });
 
   return (
     <div className="min-h-screen flex bg-white">
@@ -125,12 +151,12 @@ export const Login = () => {
             </button>
           </div>
 
+          {/* 🟢 UPDATED GOOGLE BUTTON */}
           <button 
             type="button"
-            onClick={handleGoogleLogin}
+            onClick={() => googleLogin()} 
             className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2.5 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow"
           >
-            {/* 🟢 GOOGLE LOGO RESTORED HERE */}
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M23.52 12.29C23.52 11.43 23.44 10.61 23.3 9.81H12V14.45H18.46C18.18 15.92 17.33 17.18 16.06 18.03V21H19.93C22.19 18.92 23.52 15.86 23.52 12.29Z" fill="#4285F4"/>
               <path d="M12 24C15.24 24 17.95 22.92 19.93 21.09L16.06 18.03C14.99 18.76 13.62 19.18 12 19.18C8.88 19.18 6.23 17.07 5.28 14.23H1.27V17.34C3.25 21.27 7.31 24 12 24Z" fill="#34A853"/>

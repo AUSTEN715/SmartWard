@@ -1,41 +1,45 @@
 import axiosInstance from './axiosInstance';
 
-// Helper to extract the specific error message
+// 1. Helper to dig through different error formats to find the REAL message
 const getErrorMessage = (errorData) => {
-  // 1. If backend sends { message: "User exists" }
+  // Check if backend sent a simple message
   if (errorData.message) return errorData.message;
 
-  // 2. If backend sends { error: "User exists" }
+  // Check if backend sent an 'error' object/string
   if (errorData.error) return errorData.error;
 
-  // 3. If backend sends validation array { errors: [{ msg: "Invalid email" }] }
+  // Check if backend sent a validation array (common in Node/Express)
+  // Example: { errors: [{ msg: "Invalid email" }, { msg: "Password too short" }] }
   if (errorData.errors && Array.isArray(errorData.errors)) {
     return errorData.errors.map(err => err.msg || err.message).join(', ');
   }
 
-  // 4. Fallback
+  // Fallback if nothing specific is found
   return "Unknown server error";
 };
 
+// 2. Main Error Handler
 const handleError = (error, actionName) => {
     console.error(`Error ${actionName}:`, error);
     
-    // CASE 1: Server responded with a status code (4xx, 5xx)
+    // CASE A: Server responded with a status code (400, 401, 500, etc.)
     if (error.response && error.response.data) {
         const serverMessage = getErrorMessage(error.response.data);
         return {
             success: false,
-            message: serverMessage, // We extract the REAL string here
-            data: error.response.data // Keep original data just in case
+            message: serverMessage, // 🟢 This is the detailed text you want
+            data: error.response.data
         };
     }
 
-    // CASE 2: No response (Network error, server down)
+    // CASE B: No response (Network died, Server down)
     return {
         success: false,
         message: error.message || "Network error. Check your connection."
     };
 };
+
+// --- API FUNCTIONS ---
 
 export const postData = async (url, formData) => {
     try {
@@ -57,9 +61,11 @@ export const fetchDataFromApi = async (url) => {
 
 export const uploadImage = async (url, formData) => {
     try {
+        // Force Content-Type for file uploads
         const config = {
             headers: { 'Content-Type': 'multipart/form-data' },
         };
+        // Using POST as per your backend route requirement
         const response = await axiosInstance.post(url, formData, config);
         return response.data;
     } catch (error) {
@@ -76,6 +82,7 @@ export const editData = async (url, updatedData) => {
     }
 };
 
+// Updated to accept 'config' so you can send passwords in delete requests
 export const deleteData = async (url, config = {}) => {
     try {
         const response = await axiosInstance.delete(url, config);
