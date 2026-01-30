@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, User, Phone, ArrowRight, CheckCircle, Eye, EyeOff, Loader } from 'lucide-react';
 import { postData } from '../../utils/apiUtils';
-import { openAlertBox } from '../../utils/toast'; // Import Toast
+import { openAlertBox } from '../../utils/toast'; 
 
 export const Register = () => {
   const navigate = useNavigate();
@@ -16,30 +16,33 @@ export const Register = () => {
     password: '',
   });
 
-  // --- FIXED FUNCTION START ---
   const handleRegister = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const response = await postData('/auth/register', formData);
-
-    setIsLoading(false);
-
-    if (response.success) {
-        openAlertBox('Success', "Registration successful! Please check email for OTP.");
+    try {
+        const response = await postData('/auth/register', formData);
         
-        if (response.data && response.data.accessToken) {
-             localStorage.setItem('accesstoken', response.data.accessToken);
-             localStorage.setItem('user', JSON.stringify(response.data.user));
-             navigate('/dashboard');
+        console.log("REGISTER RESPONSE:", response);
+
+        if (response.success) {
+            // ✅ CORRECT FLOW:
+            // 1. Show success message
+            openAlertBox('Success', "Registration successful! OTP sent to email.");
+            
+            // 2. Redirect to Verify Page (Passing the email so they don't have to re-type it)
+            navigate('/verify-email', { state: { email: formData.email } });
+            
         } else {
-             navigate('/login');
+            openAlertBox('Error', response.message || "Registration failed.");
         }
-    } else {
-        openAlertBox('Error', response.message || "Registration failed.");
+    } catch (error) {
+        console.error("Registration Error", error);
+        openAlertBox('Error', "An error occurred during registration");
+    } finally {
+        setIsLoading(false);
     }
   };
-  // --- FIXED FUNCTION END ---
 
   return (
     <div className="min-h-screen flex bg-white">

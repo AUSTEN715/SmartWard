@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle, Loader } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader, CheckCircle } from 'lucide-react';
 import { postData } from '../../utils/apiUtils';
 import { openAlertBox } from '../../utils/toast';
 
@@ -12,53 +12,58 @@ export const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
+    e.preventDefault();
+    setIsLoading(true);
 
-    try {
-      // Call API
-      const response = await postData('/auth/login', { ...formData, role });
+    try {
+      const response = await postData('/auth/login', { ...formData, role });
+      
+      console.log("LOGIN API RESPONSE:", response);
 
-      if (response.success) {
-        openAlertBox('Success', 'Login Successful!'); 
-        
-        // 🟢 STORE BOTH TOKENS
-        if (response.data) {
-          if (response.data.accessToken) {
-            localStorage.setItem('accesstoken', response.data.accessToken); 
-          }
-          if (response.data.refreshToken) {
-            localStorage.setItem('refreshToken', response.data.refreshToken); 
-          }
-          if (response.data.user) {
-            localStorage.setItem('user', JSON.stringify(response.data.user));
-          }
-        }
+      if (response.success) {
+        openAlertBox('Success', 'Login Successful!'); 
+        
+        // 🛠️ ROBUST TOKEN FINDER
+        const accessToken = response.data?.accessToken || response.accessToken || response.token;
+        const refreshToken = response.data?.refreshToken || response.refreshToken;
+        const userData = response.data?.user || response.user;
 
-        navigate('/dashboard');
-      } else {
-        openAlertBox('Error', response.message || 'Invalid email or password');
-      }
-    } catch (error) {
-      openAlertBox('Error', 'Login failed. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        if (accessToken) {
+           localStorage.setItem('accesstoken', accessToken); 
+           
+           if (refreshToken) {
+             localStorage.setItem('refreshToken', refreshToken); 
+           }
+           
+           if (userData) {
+             localStorage.setItem('user', JSON.stringify(userData));
+           }
+           
+           navigate('/dashboard');
+        } else {
+           console.error("❌ Token not found in response structure:", response);
+           openAlertBox('Error', 'Login successful but no token received from server.');
+        }
+
+      } else {
+        openAlertBox('Error', response.message || 'Invalid email or password');
+      }
+    } catch (error) {
+      console.error("Login Error:", error);
+      openAlertBox('Error', 'Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleGoogleLogin = () => {
     setIsLoading(true);
-    
-    // Simulating Google Login delay
     setTimeout(() => {
       setIsLoading(false);
-      
-      // 🟢 ADD THIS LINE: Show the Success Toast
       openAlertBox('Success', 'Logged in with Google successfully!');
-      
       navigate('/dashboard');
     }, 1500);
-  };;
+  };
 
   return (
     <div className="min-h-screen flex bg-white">
@@ -125,11 +130,12 @@ export const Login = () => {
             onClick={handleGoogleLogin}
             className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2.5 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow"
           >
+            {/* 🟢 GOOGLE LOGO RESTORED HERE */}
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M23.52 12.29C23.52 11.43 23.44 10.61 23.3 9.81H12V14.45H18.46C18.18 15.92 17.33 17.18 16.06 18.03V21H19.93C22.19 18.92 23.52 15.86 23.52 12.29Z" fill="#4285F4"/>
-                <path d="M12 24C15.24 24 17.95 22.92 19.93 21.09L16.06 18.03C14.99 18.76 13.62 19.18 12 19.18C8.88 19.18 6.23 17.07 5.28 14.23H1.27V17.34C3.25 21.27 7.31 24 12 24Z" fill="#34A853"/>
-                <path d="M5.28 14.23C5.03 13.37 4.9 12.45 4.9 11.5C4.9 10.55 5.03 9.63 5.28 8.77V5.66H1.27C0.46 7.27 0 9.09 0 11.5C0 13.91 0.46 15.73 1.27 17.34L5.28 14.23Z" fill="#FBBC05"/>
-                <path d="M12 3.82C13.76 3.82 15.34 4.43 16.58 5.61L19.99 2.2C17.95 0.28 15.24 0 12 0C7.31 0 3.25 2.73 1.27 6.66L5.28 9.77C6.23 6.93 8.88 3.82 12 3.82Z" fill="#EA4335"/>
+              <path d="M23.52 12.29C23.52 11.43 23.44 10.61 23.3 9.81H12V14.45H18.46C18.18 15.92 17.33 17.18 16.06 18.03V21H19.93C22.19 18.92 23.52 15.86 23.52 12.29Z" fill="#4285F4"/>
+              <path d="M12 24C15.24 24 17.95 22.92 19.93 21.09L16.06 18.03C14.99 18.76 13.62 19.18 12 19.18C8.88 19.18 6.23 17.07 5.28 14.23H1.27V17.34C3.25 21.27 7.31 24 12 24Z" fill="#34A853"/>
+              <path d="M5.28 14.23C5.03 13.37 4.9 12.45 4.9 11.5C4.9 10.55 5.03 9.63 5.28 8.77V5.66H1.27C0.46 7.27 0 9.09 0 11.5C0 13.91 0.46 15.73 1.27 17.34L5.28 14.23Z" fill="#FBBC05"/>
+              <path d="M12 3.82C13.76 3.82 15.34 4.43 16.58 5.61L19.99 2.2C17.95 0.28 15.24 0 12 0C7.31 0 3.25 2.73 1.27 6.66L5.28 9.77C6.23 6.93 8.88 3.82 12 3.82Z" fill="#EA4335"/>
             </svg>
             <span>Sign in with Google</span>
           </button>

@@ -16,6 +16,8 @@ import { LostFoundList } from './pages/lostfound/LostFoundList';
 import { ReportLostFound } from './pages/lostfound/ReportLostFound';
 import { Profile } from './pages/student/Profile';
 import { Settings } from './pages/student/Settings'; // Import Settings
+import { VerifyEmail } from './pages/auth/VerifyEmail';
+import { DeleteAccount } from './pages/student/DeleteAccount';
 
 // 4. Initialize Socket Connection (Backend URL)
 // Ensure this matches your backend port (usually 5000)
@@ -68,6 +70,8 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/settings/delete-account" element={<DeleteAccount />} />
         
         {/* Student Dashboard Routes */}
         <Route path="/dashboard" element={<Dashboard />} />

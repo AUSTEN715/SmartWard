@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Upload, Image as ImageIcon, Trash2, Loader } from 'lucide-react';
+import { X, Upload, Image as ImageIcon, Trash2, Loader, MapPin } from 'lucide-react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -12,14 +12,17 @@ export const ReportIssue = () => {
   const [files, setFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   
+  // 1. GET USER DATA (To auto-fill Hostel/Block IDs)
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+
   const [formData, setFormData] = useState({
     category: '',
     title: '',
     description: '',
-    priority: 'MEDIUM' // Default matching schema default
+    priority: 'MEDIUM',
+    roomNumber: user.roomNumber || '', // Auto-fill if available
   });
 
-  // ✅ UPDATED: IDs are now UPPERCASE to match Mongoose Enum
   const categories = [
     { id: 'PLUMBING', name: 'Plumbing', icon: '🚰' },
     { id: 'ELECTRICAL', name: 'Electrical', icon: '⚡' },
@@ -42,10 +45,19 @@ export const ReportIssue = () => {
     e.preventDefault();
     setIsLoading(true);
 
+    // Validation
     if (!formData.category) {
       openAlertBox('Error', "Please select a category");
       setIsLoading(false);
       return;
+    }
+
+    // 2. CHECK FOR HOSTEL ID (Required by Schema)
+    // If the user profile doesn't have a hostel ID, we can't submit.
+    if (!user.hostel) {
+       openAlertBox('Error', "Your profile is not assigned to a Hostel. Please contact Admin.");
+       setIsLoading(false);
+       return;
     }
 
     try {
@@ -53,8 +65,20 @@ export const ReportIssue = () => {
       data.append('category', formData.category);
       data.append('title', formData.title);
       data.append('description', formData.description);
-      data.append('priority', formData.priority); // Sends 'MEDIUM', 'HIGH', etc.
+      data.append('priority', formData.priority);
+      data.append('roomNumber', formData.roomNumber);
       
+      // 3. ATTACH HOSTEL & BLOCK IDs (Hidden fields)
+      // We send the ID strings stored in the user profile
+      data.append('hostel', typeof user.hostel === 'object' ? user.hostel._id : user.hostel);
+      
+      if (user.block) {
+        data.append('block', typeof user.block === 'object' ? user.block._id : user.block);
+      }
+      
+      // Also send reporter ID just in case backend doesn't pull it from token
+      data.append('reporter', user._id);
+
       files.forEach((file) => {
         data.append('media', file); 
       });
@@ -68,11 +92,15 @@ export const ReportIssue = () => {
         openAlertBox('Error', response.message || "Failed to report issue");
       }
     } catch (err) {
+      console.error(err);
       openAlertBox('Error', "An unexpected error occurred");
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Helper to display Hostel Name safely
+  const hostelName = user.hostel ? (typeof user.hostel === 'object' ? user.hostel.name : 'My Hostel') : 'Not Assigned';
 
   return (
     <DashboardLayout>
@@ -107,6 +135,32 @@ export const ReportIssue = () => {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* LOCATION SECTION (New) */}
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+               <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                 <MapPin className="w-4 h-4 text-blue-500" /> Location Details
+               </h3>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                     <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Hostel (Auto-detected)</label>
+                     <div className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 font-medium">
+                        {hostelName}
+                     </div>
+                  </div>
+                  <div>
+                     <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Room Number / Area</label>
+                     <input
+                        type="text"
+                        value={formData.roomNumber}
+                        onChange={(e) => setFormData({...formData, roomNumber: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                        placeholder="e.g. 304 or Common Room"
+                        required
+                     />
+                  </div>
+               </div>
             </div>
 
             <Input 
@@ -168,7 +222,7 @@ export const ReportIssue = () => {
               )}
             </div>
 
-            {/* Priority - UPDATED TO UPPERCASE VALUES */}
+            {/* Priority */}
             <div>
                <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
                <div className="flex p-1 bg-gray-100 rounded-lg">

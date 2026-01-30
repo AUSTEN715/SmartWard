@@ -1,5 +1,7 @@
 import React from 'react';
 import { X, Calendar, MapPin, User, Tag, Image as ImageIcon } from 'lucide-react';
+// 1. IMPORT THE NEW COMMENT SECTION COMPONENT
+import { CommentSection } from '../issues/CommentSection'; 
 
 export const DetailModal = ({ isOpen, onClose, title, data }) => {
   if (!isOpen || !data) return null;
@@ -19,7 +21,11 @@ export const DetailModal = ({ isOpen, onClose, title, data }) => {
         
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-white sticky top-0 z-10">
-          <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+          <div>
+             <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+             {/* Show Issue ID if available (helpful for reference) */}
+             {data.id && <p className="text-xs text-gray-400 mt-0.5">ID: #{data.id.slice(-6).toUpperCase()}</p>}
+          </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
             <X className="w-5 h-5" />
           </button>
@@ -36,23 +42,23 @@ export const DetailModal = ({ isOpen, onClose, title, data }) => {
                 alt={data.title} 
                 className="w-full h-auto max-h-72 object-contain mx-auto" 
               />
-              <div className="absolute top-3 right-3 bg-black/50 text-white text-xs px-2 py-1 rounded backdrop-blur-md">
-                Attached Image
+              <div className="absolute top-3 right-3 bg-black/50 text-white text-xs px-2 py-1 rounded backdrop-blur-md flex items-center gap-1">
+                <ImageIcon className="w-3 h-3" /> Attached Image
               </div>
             </div>
           )}
 
           {/* Title & Badge */}
           <div className="mb-6">
-            <div className="flex gap-2 mb-3">
+            <div className="flex flex-wrap gap-2 mb-3">
                <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-wide">
                  {data.category || 'General'}
                </span>
                {data.status && (
                  <span className={`px-3 py-1 rounded-full text-xs font-bold border uppercase tracking-wide ${
-                    data.status === 'RESOLVED' ? 'bg-green-50 text-green-700 border-green-100' : 
-                    data.status === 'PENDING' ? 'bg-amber-50 text-amber-700 border-amber-100' : 
-                    'bg-gray-50 text-gray-700 border-gray-100'
+                   data.status === 'RESOLVED' ? 'bg-green-50 text-green-700 border-green-100' : 
+                   data.status === 'PENDING' ? 'bg-amber-50 text-amber-700 border-amber-100' : 
+                   'bg-gray-50 text-gray-700 border-gray-100'
                  }`}>
                    {data.status}
                  </span>
@@ -111,12 +117,19 @@ export const DetailModal = ({ isOpen, onClose, title, data }) => {
           </div>
 
           {/* Description */}
-          <div>
+          <div className="mb-6">
             <h4 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide text-gray-400">Description</h4>
             <div className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap bg-white p-1">
               {data.description || "No additional details provided."}
             </div>
           </div>
+
+          {/* 💬 COMMENT SECTION (Inserted Here) */}
+          {/* Only show for 'Issue Details' and if we have a valid ID */}
+          {title === 'Issue Details' && data.id && (
+             <CommentSection issueId={data.id} />
+          )}
+
         </div>
 
         {/* Footer */}
